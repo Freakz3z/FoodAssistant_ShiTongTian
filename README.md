@@ -38,8 +38,8 @@
 
 1. 克隆项目
 ```bash
-git clone https://github.com/yourusername/ShiTongTian_VL.git
-cd ShiTongTian_VL
+git clone https://github.com/Freakz3z/FoodAssistant_ShiTongTian.git
+cd FoodAssistant_ShiTongTian
 ```
 
 2. 安装依赖
@@ -49,7 +49,7 @@ npm install
 
 3. 启动服务器
 ```bash
-npm start
+node server.js
 ```
 
 4. 访问应用
@@ -122,23 +122,6 @@ npm start
 ## 📄 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
-
-## 👥 作者
-
-- Freak - [@yourusername](https://github.com/yourusername)
-
-## 🙏 致谢
-
-- 感谢阿里云百炼大模型提供的技术支持
-- 感谢所有贡献者的付出
-- 感谢使用本项目的小伙伴们
-
-## 📞 联系方式
-
-如有问题或建议，请通过以下方式联系：
-
-- 提交 Issue
-- 发送邮件至：[your-email@example.com]
 
 ---
 
