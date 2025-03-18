@@ -197,6 +197,6 @@ app.post('/api/analyze', async (req, res) => {
 });
 
 const PORT = 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`服务器运行在 http://localhost:${PORT}`);
 }); 
