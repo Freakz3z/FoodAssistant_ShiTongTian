@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食通天</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.2.4/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient sticky-top" style="background-color: white;">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-utensils"></i> 食通天
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="background-color: rgba(0,0,0,0.4);">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-page="home">
+                            <i class="fas fa-home"></i> 首页
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="history">
+                            <i class="fas fa-history"></i> 历史记录
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="overview">
+                            <i class="fas fa-chart-pie"></i> 数据概览
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                            <i class="fas fa-cog"></i> 设置
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 设置模态框 -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="settingsModalLabel">
+                        <i class="fas fa-cog"></i> API 密钥设置
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="apiKeyForm">
+                        <div class="mb-3">
+                            <label for="apiKey" class="form-label">百炼 API Key</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="apiKey" placeholder="请输入您的API Key">
+                                <button type="button" class="btn btn-outline-secondary" id="toggleApiKey">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                您的API Key将安全地存储在浏览器中，不会上传到服务器。
+                            </div>
+                        </div>
+                    </form>
+                    <div class="alert alert-info">
+                        <h6>如何获取 API Key？</h6>
+                        <ol class="mb-0">
+                            <li>访问 <a href="https://dashscope.console.aliyun.com/" target="_blank">阿里云百炼控制台</a></li>
+                            <li>登录您的阿里云账号</li>
+                            <li>在控制台中找到 API Key 管理</li>
+                            <li>创建或复制现有的 API Key</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveApiKey">
+                        <i class="fas fa-save"></i> 保存设置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <!-- API Key 提醒 -->
+        <div id="apiKeyReminder" class="alert alert-warning alert-dismissible fade show" role="alert" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            您还没有设置API Key。请先 <a href="#" class="alert-link" data-bs-toggle="modal" data-bs-target="#settingsModal">设置您的API Key</a> 以使用分析功能。
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- 首页 -->
+        <div id="home-page" class="page active">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-camera"></i> 上传食物图片
+                            </h5>
+                            <div class="upload-area" id="upload-area">
+                                <input type="file" id="file-input" accept="image/*" class="d-none">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary btn-lg" id="upload-btn">
+                                        <i class="fas fa-upload"></i> 选择图片
+                                    </button>
+                                    <button class="btn btn-success btn-lg" id="camera-btn">
+                                        <i class="fas fa-camera"></i> 拍照
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="preview-area" class="mt-3 d-none text-center">
+                                <img id="preview-image" class="img-fluid rounded shadow-sm" alt="预览图片">
+                                <button class="btn btn-primary btn-lg mt-3 w-100" id="analyze-btn">
+                                    <i class="fas fa-search"></i> 分析图片
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div id="result-area" class="d-none">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-list-alt"></i> 分析结果
+                                </h5>
+                                <div id="analysis-result" class="markdown-body"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史记录页 -->
+        <div id="history-page" class="page d-none">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-history"></i> 历史记录
+                    </h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-outline-primary active" data-period="day">
+                                    <i class="fas fa-calendar-day"></i> 今天
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" data-period="week">
+                                    <i class="fas fa-calendar-week"></i> 本周
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" data-period="month">
+                                    <i class="fas fa-calendar-alt"></i> 本月
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" data-period="all">
+                                    <i class="fas fa-calendar"></i> 全部
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-calendar"></i>
+                                </span>
+                                <input type="date" id="date-filter" class="form-control">
+                                <select class="form-select" id="page-size" style="max-width: 100px;">
+                                    <option value="5">5条/页</option>
+                                    <option value="10" selected>10条/页</option>
+                                    <option value="20">20条/页</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="history-list" class="history-container">
+                        <!-- 历史记录将在这里动态加载 -->
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted">
+                            共 <span id="total-items">0</span> 条记录
+                        </div>
+                        <nav aria-label="历史记录分页">
+                            <ul class="pagination mb-0" id="pagination">
+                                <!-- 分页按钮将在这里动态加载 -->
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据概览页 -->
+        <div id="overview-page" class="page d-none">
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-chart-bar"></i> 记录统计
+                            </h5>
+                            <div id="stats-container" class="row text-center">
+                                <div class="col-4 mb-3">
+                                    <div class="h3" id="total-records">0</div>
+                                    <div class="text-muted">总记录数</div>
+                                </div>
+                                <div class="col-4 mb-3">
+                                    <div class="h3" id="avg-calories">0</div>
+                                    <div class="text-muted">平均热量 (kcal)</div>
+                                </div>
+                                <div class="col-4 mb-3">
+                                    <div class="h3" id="active-days">0</div>
+                                    <div class="text-muted">记录天数</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer mt-5 py-3 bg-dark text-light">
+        <div class="container text-center">
+            <span>Copyright © by Freak All Rights Reserved.</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
+</body>
+</html> 

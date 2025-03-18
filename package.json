@@ -1,0 +1,14 @@
+{
+  "name": "food-analysis-app",
+  "version": "1.0.0",
+  "description": "智能食物分析应用",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "node-fetch": "^2.6.9"
+  }
+}
