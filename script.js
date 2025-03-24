@@ -647,82 +647,154 @@ function loadOverview() {
 
     // 更新统计数据
     updateStats(history);
+    
+    // 使用 qwen-max 分析数据
+    analyzeLocalData(history);
 }
 
-// 更新统计数据
-function updateStats(history) {
-    // 总记录数
-    document.getElementById('total-records').textContent = history.length;
-
-    // 计算平均热量
-    const caloriesRegex = /(\d+)\s*[千k]?[卡c]路里/i;
-    const calories = history.map(item => {
-        try {
-            if (!item?.analysis?.food?.calories) return 0;
-            const match = item.analysis.food.calories.match(caloriesRegex);
-            return match ? parseInt(match[1]) : 0;
-        } catch (error) {
-            console.error('解析热量数据错误:', error);
-            return 0;
-        }
-    }).filter(cal => cal > 0);
-    
-    const avgCalories = calories.length > 0 
-        ? Math.round(calories.reduce((a, b) => a + b, 0) / calories.length)
-        : 0;
-    document.getElementById('avg-calories').textContent = avgCalories;
-
-    // 记录天数（不重复的日期数量）
-    const uniqueDays = new Set(
-        history.map(item => {
-            try {
-                return new Date(item.date).toLocaleDateString();
-            } catch (error) {
-                console.error('解析日期错误:', error);
-                return null;
+// 分析本地数据
+async function analyzeLocalData(history) {
+    try {
+        // 准备分析数据
+        const analysisData = {
+            totalRecords: history.length,
+            records: history.slice(-10), // 只分析最近10条记录
+            stats: {
+                totalCalories: 0,
+                uniqueFoods: new Set(),
+                nutritionTypes: new Set(),
+                dailyCalories: {},
+                nutritionDistribution: {}
             }
-        }).filter(Boolean)
-    );
-    document.getElementById('active-days').textContent = uniqueDays.size;
-}
+        };
 
-// 绘制食物类型分布图
-function drawFoodTypeChart(history) {
-    const foodTypes = {};
-    history.forEach(item => {
-        const foodName = item.analysis.food.name || '未知食物';
-        foodTypes[foodName] = (foodTypes[foodName] || 0) + 1;
-    });
-
-    // 获取前8个最常见的食物类型
-    const sortedTypes = Object.entries(foodTypes)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 8);
-    
-    const colors = [
-        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
-        '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
-    ];
-
-    new Chart(foodTypeChart, {
-        type: 'doughnut',
-        data: {
-            labels: sortedTypes.map(([name]) => name),
-            datasets: [{
-                data: sortedTypes.map(([, count]) => count),
-                backgroundColor: colors,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'right'
+        // 计算基础统计数据
+        history.forEach(item => {
+            if (item?.analysis?.food) {
+                const food = item.analysis.food;
+                const date = new Date(item.date).toLocaleDateString();
+                
+                // 统计食物种类
+                if (food.name) {
+                    analysisData.stats.uniqueFoods.add(food.name);
+                }
+                
+                // 提取卡路里数据
+                const caloriesMatch = food.calories?.match(/(\d+)\s*[千k]?[卡c]路里/i);
+                if (caloriesMatch) {
+                    const calories = parseInt(caloriesMatch[1]);
+                    analysisData.stats.totalCalories += calories;
+                    analysisData.stats.dailyCalories[date] = (analysisData.stats.dailyCalories[date] || 0) + calories;
+                }
+                
+                // 提取营养成分类型
+                if (food.nutrition) {
+                    const nutritionTypes = food.nutrition.match(/(蛋白质|碳水化合物|脂肪|维生素|膳食纤维|矿物质)/g) || [];
+                    nutritionTypes.forEach(type => {
+                        analysisData.stats.nutritionTypes.add(type);
+                        analysisData.stats.nutritionDistribution[type] = (analysisData.stats.nutritionDistribution[type] || 0) + 1;
+                    });
                 }
             }
+        });
+
+        // 计算每日平均热量
+        const dailyCalories = Object.values(analysisData.stats.dailyCalories);
+        const avgDailyCalories = dailyCalories.length > 0 
+            ? Math.round(dailyCalories.reduce((a, b) => a + b, 0) / dailyCalories.length)
+            : 0;
+
+        // 调用 qwen-max 进行分析
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                apiKey: API_KEY,
+                data: {
+                    model: 'qwen-max',
+                    input: {
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `你是一个专业的营养师，请基于用户的饮食记录数据进行分析，并提供专业的建议。
+                                分析时请考虑：
+                                1. 饮食多样性（基于不同食物种类的数量）
+                                2. 营养均衡性（基于营养类型的分布）
+                                3. 热量摄入情况（基于每日平均热量）
+                                4. 改进建议（针对不足的方面提供具体建议）
+                                请用markdown格式输出分析结果，包含以下部分：
+                                ### 饮食分析
+                                ### 营养评估
+                                ### 热量分析
+                                ### 改进建议`
+                            },
+                            {
+                                role: 'user',
+                                content: JSON.stringify({
+                                    totalRecords: analysisData.totalRecords,
+                                    uniqueFoods: Array.from(analysisData.stats.uniqueFoods),
+                                    nutritionTypes: Array.from(analysisData.stats.nutritionTypes),
+                                    nutritionDistribution: analysisData.stats.nutritionDistribution,
+                                    totalCalories: analysisData.stats.totalCalories,
+                                    avgDailyCalories: avgDailyCalories,
+                                    dailyCalories: analysisData.stats.dailyCalories
+                                })
+                            }
+                        ]
+                    }
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`API请求失败: ${response.status}`);
         }
-    });
+
+        const data = await response.json();
+        
+        // 更新AI建议区域
+        const aiSuggestions = document.getElementById('ai-suggestions');
+        if (aiSuggestions) {
+            // 准备基础统计信息
+            const statsMarkdown = `
+### 📊 数据分析概览
+
+- 总记录数：${analysisData.totalRecords}
+- 不同食物种类：${Array.from(analysisData.stats.uniqueFoods).join('、')}
+- 总热量摄入：${analysisData.stats.totalCalories} 千卡
+- 平均每日热量：${avgDailyCalories} 千卡
+- 营养类型覆盖：${Array.from(analysisData.stats.nutritionTypes).join('、')}
+
+`;
+
+            // 直接显示 AI 分析结果
+            aiSuggestions.innerHTML = marked.parse(statsMarkdown + data.output.text);
+        }
+
+        // 绘制热量趋势图
+        drawCaloriesTrendChart(history);
+        
+        // 绘制营养成分分布图
+        drawNutritionChart(history);
+        
+        // 绘制食物类型分布图
+        drawFoodTypeChart(history);
+
+    } catch (error) {
+        console.error('数据分析错误:', error);
+        const aiSuggestions = document.getElementById('ai-suggestions');
+        if (aiSuggestions) {
+            aiSuggestions.innerHTML = marked.parse(`
+### ❌ 数据分析失败
+
+错误信息：${error.message}
+
+请检查网络连接或稍后重试。
+            `);
+        }
+    }
 }
 
 // 绘制热量趋势图
@@ -799,7 +871,7 @@ function drawNutritionChart(history) {
         });
     });
 
-    new Chart(nutritionChart, {
+    new Chart(document.getElementById('nutrition-chart'), {
         type: 'bar',
         data: {
             labels: Object.keys(nutritionCount),
@@ -831,6 +903,82 @@ function drawNutritionChart(history) {
     });
 }
 
+// 绘制食物类型分布图
+function drawFoodTypeChart(history) {
+    const foodTypes = {};
+    history.forEach(item => {
+        const foodName = item.analysis.food.name || '未知食物';
+        foodTypes[foodName] = (foodTypes[foodName] || 0) + 1;
+    });
+
+    // 获取前8个最常见的食物类型
+    const sortedTypes = Object.entries(foodTypes)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8);
+    
+    const colors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+        '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+    ];
+
+    new Chart(document.getElementById('food-type-chart'), {
+        type: 'doughnut',
+        data: {
+            labels: sortedTypes.map(([name]) => name),
+            datasets: [{
+                data: sortedTypes.map(([, count]) => count),
+                backgroundColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+}
+
+// 更新统计数据
+function updateStats(history) {
+    // 总记录数
+    document.getElementById('total-records').textContent = history.length;
+
+    // 计算平均热量
+    const caloriesRegex = /(\d+)\s*[千k]?[卡c]路里/i;
+    const calories = history.map(item => {
+        try {
+            if (!item?.analysis?.food?.calories) return 0;
+            const match = item.analysis.food.calories.match(caloriesRegex);
+            return match ? parseInt(match[1]) : 0;
+        } catch (error) {
+            console.error('解析热量数据错误:', error);
+            return 0;
+        }
+    }).filter(cal => cal > 0);
+    
+    const avgCalories = calories.length > 0 
+        ? Math.round(calories.reduce((a, b) => a + b, 0) / calories.length)
+        : 0;
+    document.getElementById('avg-calories').textContent = avgCalories;
+
+    // 记录天数（不重复的日期数量）
+    const uniqueDays = new Set(
+        history.map(item => {
+            try {
+                return new Date(item.date).toLocaleDateString();
+            } catch (error) {
+                console.error('解析日期错误:', error);
+                return null;
+            }
+        }).filter(Boolean)
+    );
+    document.getElementById('active-days').textContent = uniqueDays.size;
+}
+
 // 显示AI建议
 async function getAISuggestions(history) {
     try {
@@ -843,7 +991,7 @@ async function getAISuggestions(history) {
                 apiKey: API_KEY,
                 data: {
                     model: 'qwen-max',
-                    input: {
+                    input: {    
                         messages: [
                             {
                                 role: 'user',
@@ -861,6 +1009,7 @@ async function getAISuggestions(history) {
         }
 
         const data = await response.json();
+        data = data.food.advice;
         // 将AI建议渲染为Markdown
         aiSuggestions.innerHTML = marked.parse(data.output.text);
     } catch (error) {

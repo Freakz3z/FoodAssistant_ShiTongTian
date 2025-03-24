@@ -90,52 +90,27 @@ app.post('/api/analyze', async (req, res) => {
                 ]
             };
         } else if (model === 'qwen-max') {
-            // 预定义示例响应
-            const example1Response = JSON.stringify({
-                food: {
-                    name: "意大利面",
-                    nutrition: ["碳水化合物", "蛋白质"],
-                    calories: "320千卡",
-                    advice: "适量食用，注意控制份量"
-                }
-            });
-            const example2Response = JSON.stringify({
-                food: {
-                    name: "沙拉",
-                    nutrition: ["维生素", "膳食纤维"],
-                    calories: "150千卡",
-                    advice: "健康的选择，可以多吃"
-                }
-            });
-            const example3Response = JSON.stringify({
-                food: {
-                    name: "汉堡",
-                    nutrition: ["蛋白质", "脂肪"],
-                    calories: "450千卡",
-                    advice: "偶尔食用，注意热量摄入"
-                }
-            });
-
             // 构建文本分析请求
             requestBody = {
                 model: "qwen-max",
                 messages: [
                     {
                         role: "system",
-                        content: `将食物分析结果转换为JSON格式，包含food对象，其中包含name（食物名称）、nutrition（营养成分数组）、calories（卡路里）和advice（建议）字段。
-                        示例：
-                        Q：这是一份意大利面，含有碳水化合物和蛋白质，大约320千卡，建议适量食用，注意控制份量
-                        A：${example1Response}
+                        content: `你是一个专业的营养师，请基于用户的饮食记录数据进行分析，并提供专业的建议。
+                        分析时请考虑：
+                        1. 饮食多样性（基于不同食物种类的数量）
+                        2. 营养均衡性（基于营养类型的分布）
+                        3. 热量摄入情况（基于每日平均热量）
+                        4. 改进建议（针对不足的方面提供具体建议）
                         
-                        Q：这是一份沙拉，富含维生素和膳食纤维，约150千卡，是健康的选择，可以多吃
-                        A：${example2Response}
-                        
-                        Q：这是一个汉堡，含有蛋白质和脂肪，约450千卡，建议偶尔食用，注意热量摄入
-                        A：${example3Response}`
+                        请用markdown格式输出分析结果，包含以下部分：
+                        ### 饮食分析
+                        ### 营养评估
+                        ### 热量分析
+                        ### 改进建议`
                     },
                     ...req.body.data.input.messages.slice(1)
-                ],
-                response_format: { type: "json_object" }
+                ]
             };
         } else {
             throw new Error(`不支持的模型类型: ${model}`);

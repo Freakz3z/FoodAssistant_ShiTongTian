@@ -201,27 +201,76 @@
             </div>
         </div>
 
-        <!-- 数据概览页 -->
+        <!-- 数据概览页面 -->
         <div id="overview-page" class="page d-none">
-            <div class="row">
-                <div class="col-md-12 mb-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <i class="fas fa-chart-bar"></i> 记录统计
-                            </h5>
-                            <div id="stats-container" class="row text-center">
-                                <div class="col-4 mb-3">
-                                    <div class="h3" id="total-records">0</div>
-                                    <div class="text-muted">总记录数</div>
-                                </div>
-                                <div class="col-4 mb-3">
-                                    <div class="h3" id="avg-calories">0</div>
-                                    <div class="text-muted">平均热量 (kcal)</div>
-                                </div>
-                                <div class="col-4 mb-3">
-                                    <div class="h3" id="active-days">0</div>
-                                    <div class="text-muted">记录天数</div>
+            <div class="container">
+                <h2 class="mb-4">数据概览</h2>
+                
+                <!-- 基础统计卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">总记录数</h5>
+                                <p class="card-text display-4" id="total-records">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">平均热量</h5>
+                                <p class="card-text display-4" id="avg-calories">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">记录天数</h5>
+                                <p class="card-text display-4" id="active-days">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">热量趋势</h5>
+                                <canvas id="calories-trend-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">营养成分分布</h5>
+                                <canvas id="nutrition-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">食物类型分布</h5>
+                                <canvas id="food-type-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">AI 营养分析</h5>
+                                <div id="ai-suggestions" class="markdown-body">
+                                    <div class="text-center">
+                                        <i class="fas fa-spinner fa-spin"></i> 正在分析数据...
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -231,15 +280,13 @@
         </div>
     </div>
 
-    <footer class="footer mt-5 py-3 bg-dark text-light">
+    <!-- <footer class="footer mt-5 py-3 bg-dark text-light">
         <div class="container text-center">
             <span>Copyright © by Freak All Rights Reserved.</span>
         </div>
-    </footer>
+    </footer> -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
-</body>
-</html> 
 </body>
 </html> 
